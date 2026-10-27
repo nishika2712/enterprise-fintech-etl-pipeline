@@ -3,11 +3,10 @@
 [![CI](https://github.com/nishika2712/enterprise-fintech-etl-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nishika2712/enterprise-fintech-etl-pipeline/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5-orange.svg)](https://spark.apache.org/)
-[![Airflow DAG](https://img.shields.io/badge/Airflow-DAG%20authored-lightgrey.svg)](https://airflow.apache.org/)
 
 A batch ETL and data quality pipeline for financial transaction records. It reads raw JSON transactions, removes invalid records with PySpark, aggregates spending per customer, and writes the result as Parquet. Transformation logic is covered by Pytest and run automatically through GitHub Actions.
 
-> This is a portfolio project built on a small sample dataset. It demonstrates pipeline structure, testing and CI. It is not a production-scale system.
+> This is a portfolio project built on small, mock datasets. It demonstrates pipeline structure, testing and CI. It is not a production-scale system.
 
 ---
 
@@ -20,7 +19,6 @@ Raw transaction logs often contain failed transactions and invalid amounts. Runn
 3. **Persist** the output as Parquet (columnar format) in a data-lake-style folder layout.
 4. **Validate** the transformation logic with Pytest.
 5. **Automate** test runs with GitHub Actions.
-6. **Orchestrate** the steps with an Airflow DAG (authored, see Limitations).
 
 ---
 
@@ -48,6 +46,14 @@ T2 is dropped because it is a failed transaction with a negative amount.
 - Remaining transactions are aggregated into `total_spent` per `customer_id`.
 - These rules are asserted in `tests/test_transform.py`.
 
+## Mock Data Generator
+
+`etl/generate_mock_events.py` creates random mock transactions for local testing. It deliberately includes negative amounts and `FAILED` / `PENDING` statuses so the cleaning logic has something to remove. Output goes to `data/generated_transactions.json`, separate from the committed sample input.
+
+```bash
+python etl/generate_mock_events.py
+```
+
 ---
 
 ## Project Structure
@@ -55,32 +61,40 @@ T2 is dropped because it is a failed transaction with a negative amount.
 ```text
 enterprise-fintech-etl-pipeline/
 ├── .github/
-│   └── workflows/ci.yml          # GitHub Actions: install, test, run pipeline on push
+│   └── workflows/ci.yml           # GitHub Actions: install, test, run pipeline on push
 ├── data/
-│   ├── raw_transactions.json     # Sample input transactions
-│   └── output_parquet/           # Parquet output
+│   ├── raw_transactions.json      # Sample input transactions
+│   └── output_parquet/            # Parquet output
 ├── dags/
-│   └── fintech_etl_dag.py        # Airflow DAG definition
+│   └── fintech_etl_dag.py         # Airflow DAG definition (authored, not deployed)
+├── dbt/                           # dbt project scaffold (exploratory)
+│   ├── dbt_project.yml
+│   └── models/
+│       ├── staging/
+│       └── marts/
 ├── etl/
-│   └── transform_spark.py        # PySpark cleaning and aggregation
+│   ├── transform_spark.py         # PySpark cleaning and aggregation
+│   └── generate_mock_events.py    # Mock transaction generator for local testing
 ├── tests/
-│   └── test_transform.py         # Pytest transformation tests
-├── pytest.ini                    # Adds project root to the import path
-├── requirements.txt              # Python dependencies
+│   └── test_transform.py          # Pytest transformation tests
+├── docker-compose.yml             # Airflow setup draft (exploratory, unverified)
+├── pytest.ini                     # Adds project root to the import path
+├── requirements.txt               # Python dependencies
 └── README.md
 ```
 
 ## Technology Stack
 
-| Area             | Tools                          |
-|------------------|--------------------------------|
-| Language         | Python                         |
-| Processing       | Apache Spark (PySpark)         |
-| Storage format   | Apache Parquet                 |
-| Testing          | Pytest                         |
-| CI/CD            | GitHub Actions                 |
-| Orchestration    | Apache Airflow (DAG authored)  |
-| Version control  | Git, GitHub                    |
+| Area            | Tools                   |
+|-----------------|-------------------------|
+| Language        | Python                  |
+| Processing      | Apache Spark (PySpark)  |
+| Storage format  | Apache Parquet          |
+| Testing         | Pytest                  |
+| CI/CD           | GitHub Actions          |
+| Version control | Git, GitHub             |
+
+Airflow and dbt files are included as exploratory work (see Limitations).
 
 ---
 
@@ -150,7 +164,9 @@ The first run takes 10 to 20 seconds while Spark starts.
 
 ## Limitations and Next Steps
 
-- **Scale:** the input is a small sample file. The logic is written in PySpark, but it has not been tested on large volumes.
+- **Scale:** inputs are small mock files. The logic is written in PySpark, but it has not been tested on large volumes.
 - **Storage:** output is local Parquet files, not a cloud data lake or warehouse.
-- **Airflow:** the DAG in `dags/` is authored but not deployed to a running Airflow environment. Airflow is not in `requirements.txt`; install it separately to try the DAG.
-- **Possible extensions:** schema validation on ingest, incremental loads, loading the output into a warehouse such as BigQuery, and data quality reporting.
+- **Airflow:** the DAG in `dags/` is authored but has not been run in a live Airflow environment. `docker-compose.yml` is an unverified draft: it does not yet initialize the metadata database or start a scheduler. Airflow is not in `requirements.txt`.
+- **dbt:** `dbt/` is a project scaffold with `staging` and `marts` folders. The models have not been validated with `dbt run` / `dbt test`, and no dbt adapter is installed.
+- **Streaming:** there is no streaming or CDC component. A Kafka-based ingestion flow is a possible future extension.
+- **Other extensions:** schema validation on ingest, incremental loads, loading the output into a warehouse such as BigQuery, and data quality reporting.
