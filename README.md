@@ -1,80 +1,156 @@
-# 🚀 Enterprise Fintech ETL & Data Pipeline
+# Fintech Transaction ETL & Data Quality Pipeline
 
-[![Data Engineering CI Pipeline](https://github.com/nishika2712/enterprise-fintech-etl-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nishika2712/enterprise-fintech-etl-pipeline/actions)
+[![CI](https://github.com/nishika2712/enterprise-fintech-etl-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/nishika2712/enterprise-fintech-etl-pipeline/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5-orange.svg)](https://spark.apache.org/)
-[![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-Orchestration-red.svg)](https://airflow.apache.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Airflow DAG](https://img.shields.io/badge/Airflow-DAG%20authored-lightgrey.svg)](https://airflow.apache.org/)
 
-An end-to-end batch ETL and data quality pipeline designed for fintech platforms. This project automates the ingestion, cleaning, transformation, and validation of high-volume financial transaction records into optimized columnar data lake storage.
+A batch ETL and data quality pipeline for financial transaction records. It reads raw JSON transactions, removes invalid records with PySpark, aggregates spending per customer, and writes the result as Parquet. Transformation logic is covered by Pytest and run automatically through GitHub Actions.
 
----
-
-## 💡 Business Use Case & Core Idea
-In modern fintech and lending ecosystems (such as enterprise financial platforms), raw operational transaction logs arrive with structural anomalies, failed transaction statuses, and zero-value errors. Querying operational databases directly for risk analytics degrades production performance. 
-
-This project solves that challenge by:
-1. **Ingesting** raw JSON transaction feeds.
-2. **Transforming** datasets using distributed PySpark processing to filter out invalid/failed transactions and aggregate customer spending behaviors.
-3. **Persisting** data into compressed, high-performance **Parquet** columnar files (Data Lake format).
-4. **Orchestrating** workflows sequentially using **Apache Airflow DAGs**.
-5. **Enforcing Quality** via automated **Pytest** unit tests and **GitHub Actions CI/CD** automation.
+> This is a portfolio project built on a small sample dataset. It demonstrates pipeline structure, testing and CI. It is not a production-scale system.
 
 ---
 
-## 🏗️ Architecture & Project Structure
+## Business Use Case
+
+Raw transaction logs often contain failed transactions and invalid amounts. Running risk or spending analytics directly on operational databases adds load to production systems. This project shows a simple, testable way to prepare that data separately:
+
+1. **Ingest** raw JSON transaction records.
+2. **Clean and transform** with PySpark: drop invalid and failed transactions, then aggregate spend per customer.
+3. **Persist** the output as Parquet (columnar format) in a data-lake-style folder layout.
+4. **Validate** the transformation logic with Pytest.
+5. **Automate** test runs with GitHub Actions.
+6. **Orchestrate** the steps with an Airflow DAG (authored, see Limitations).
+
+---
+
+## Sample Data
+
+**Input** (`data/raw_transactions.json`)
+
+| transaction_id | customer_id | amount | status    |
+|----------------|-------------|--------|-----------|
+| T1             | C1          | 100.0  | COMPLETED |
+| T2             | C1          | -10.0  | FAILED    |
+
+**Output** (`data/output_parquet/`)
+
+| customer_id | total_spent |
+|-------------|-------------|
+| C1          | 100.0       |
+
+T2 is dropped because it is a failed transaction with a negative amount.
+
+## Data Quality Rules
+
+- Failed transactions are excluded.
+- Negative-amount records are excluded.
+- Remaining transactions are aggregated into `total_spent` per `customer_id`.
+- These rules are asserted in `tests/test_transform.py`.
+
+---
+
+## Project Structure
 
 ```text
 enterprise-fintech-etl-pipeline/
 ├── .github/
-│   └── workflows/ci.yml                # Automated CI/CD pipeline (Pytest & Python execution on push)
+│   └── workflows/ci.yml          # GitHub Actions: install, test, run pipeline on push
 ├── data/
-│   ├── raw_transactions.json           # Raw mock input financial transactions
-│   └── output_parquet/                 # Processed Data Lake storage (Parquet format)
+│   ├── raw_transactions.json     # Sample input transactions
+│   └── output_parquet/           # Parquet output
 ├── dags/
-│   └── fintech_etl_dag.py              # Apache Airflow DAG orchestration script
+│   └── fintech_etl_dag.py        # Airflow DAG definition
 ├── etl/
-│   └── transform_spark.py              # PySpark batch extraction, data cleaning & aggregation script
+│   └── transform_spark.py        # PySpark cleaning and aggregation
 ├── tests/
-│   └── test_transform.py               # Pytest automated data quality & transformation unit tests
-├── requirements.txt                    # Project python dependencies
-└── README.md                           # Project documentation
+│   └── test_transform.py         # Pytest transformation tests
+├── pytest.ini                    # Adds project root to the import path
+├── requirements.txt              # Python dependencies
+└── README.md
+```
 
-## 🛠️ Technology Stack
-1. Programming Language: Python
-2. Data Processing & ETL: Apache Spark (PySpark)
-3. Orchestration: Apache Airflow (DAGs & BashOperators)
-4. Storage Format: Apache Parquet (Columnar Data Lake storage)
-5. Data Quality & Testing: Pytest
-6. DevOps & CI/CD: GitHub Actions
-7. Version Control: Git & GitHub
+## Technology Stack
 
-## ⚙️ Getting Started & Local Setup
-1. Clone the Repository
-git clone [https://github.com/nishika2712/enterprise-fintech-etl-pipeline.git](https://github.com/nishika2712/enterprise-fintech-etl-pipeline.git)
+| Area             | Tools                          |
+|------------------|--------------------------------|
+| Language         | Python                         |
+| Processing       | Apache Spark (PySpark)         |
+| Storage format   | Apache Parquet                 |
+| Testing          | Pytest                         |
+| CI/CD            | GitHub Actions                 |
+| Orchestration    | Apache Airflow (DAG authored)  |
+| Version control  | Git, GitHub                    |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.10 or higher (3.12 tested)
+- Java 17 (required by Spark). On macOS: `brew install openjdk@17`, then:
+
+```bash
+echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+source ~/.zshrc
+java -version
+```
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/nishika2712/enterprise-fintech-etl-pipeline.git
 cd enterprise-fintech-etl-pipeline
+```
 
-2. Set Up a Virtual Environment & Install Dependencies
-python -m venv venv
+### 2. Create a virtual environment and install dependencies
 
-# On Windows:
+```bash
+python3 -m venv venv
+
+# macOS / Linux
+source venv/bin/activate
+
+# Windows
 venv\Scripts\activate
 
-# On macOS/Linux:
-source venv/bin/activate
 pip install -r requirements.txt
+```
 
-3. Run the PySpark ETL Pipeline
-Execute the transformation script to process raw transactions and generate Parquet outputs:
+### 3. Run the PySpark pipeline
+
+```bash
 python etl/transform_spark.py
+```
 
-4. Run Automated Data Quality Tests
-Execute the unit test suite to verify transformation logic and data integrity:
-pytest tests/
+The output is written to `data/output_parquet/`.
 
-## 🔄 CI/CD Pipeline Automation
-This repository utilizes GitHub Actions (.github/workflows/ci.yml). Every time code is pushed to the main branch, the CI server automatically:
-1. Provisions a clean Ubuntu virtual machine.
-2. Installs all project dependencies.
-3. Executes the full Pytest data validation suite.
-4. Runs the end-to-end PySpark batch ingestion pipeline.
+### 4. Run the tests
+
+```bash
+pytest tests/ -v
+```
+
+The first run takes 10 to 20 seconds while Spark starts.
+
+---
+
+## CI/CD
+
+`.github/workflows/ci.yml` runs on every push to `main`. It:
+
+1. Starts a clean Ubuntu runner.
+2. Sets up Python and Java 17.
+3. Installs dependencies from `requirements.txt`.
+4. Runs the Pytest suite.
+5. Runs the PySpark pipeline end to end.
+
+---
+
+## Limitations and Next Steps
+
+- **Scale:** the input is a small sample file. The logic is written in PySpark, but it has not been tested on large volumes.
+- **Storage:** output is local Parquet files, not a cloud data lake or warehouse.
+- **Airflow:** the DAG in `dags/` is authored but not deployed to a running Airflow environment. Airflow is not in `requirements.txt`; install it separately to try the DAG.
+- **Possible extensions:** schema validation on ingest, incremental loads, loading the output into a warehouse such as BigQuery, and data quality reporting.
