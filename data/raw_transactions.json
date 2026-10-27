@@ -1,0 +1,6 @@
+[
+  {"transaction_id": "TXN001", "customer_id": "CUST101", "amount": 250.50, "status": "COMPLETED", "timestamp": "2026-10-25T10:00:00Z"},
+  {"transaction_id": "TXN002", "customer_id": "CUST102", "amount": -50.00, "status": "FAILED", "timestamp": "2026-10-25T10:05:00Z"},
+  {"transaction_id": "TXN003", "customer_id": "CUST101", "amount": 1200.00, "status": "COMPLETED", "timestamp": "2026-10-25T10:10:00Z"},
+  {"transaction_id": "TXN004", "customer_id": "CUST103", "amount": 0.00, "status": "PENDING", "timestamp": "2026-10-25T10:15:00Z"}
+]
