@@ -30,6 +30,6 @@ if __name__ == "__main__":
     print(json.dumps(records, indent=4))
     
     # Optional: Automatically write it to your data directory for the pipeline to consume
-    with open("data/raw_transactions.json", "w") as f:
+    with open("data/generated_transactions.json", "w") as f:
         json.dump(records, f, indent=4)
-    print("--- Successfully generated and saved mock raw transactions to data/raw_transactions.json ---")
+    print("--- Successfully generated and saved mock raw transactions to data/generated_transactions.json ---")
